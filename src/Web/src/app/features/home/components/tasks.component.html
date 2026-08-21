@@ -1,0 +1,262 @@
+<div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-5 sm:p-8">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Tasks</h1>
+      <p class="text-muted-foreground mt-1 text-sm">Keep track of what needs to get done</p>
+    </div>
+    <button hlmBtn (click)="openCreateDialog()">
+      <ng-icon name="lucidePlus" />
+      Add task
+    </button>
+  </header>
+
+  <div class="flex flex-col gap-3 sm:flex-row">
+    <div class="relative flex-1">
+      <ng-icon
+        name="lucideSearch"
+        class="text-muted-foreground pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-sm"
+      />
+      <input
+        hlmInput
+        type="search"
+        class="ps-8"
+        placeholder="Search tasks"
+        aria-label="Search tasks"
+        (input)="searchTasks($event)"
+      />
+    </div>
+    <div class="flex rounded-md border p-0.5">
+      @for (option of ['all', 'open', 'completed']; track option) {
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="filter() === option ? 'secondary' : 'ghost'"
+          (click)="setFilter(option === 'all' ? 'all' : option === 'open' ? 'open' : 'completed')"
+        >
+          {{ option === 'all' ? 'All' : option === 'open' ? 'Open' : 'Done' }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="text-muted-foreground py-12 text-center text-sm">Loading tasks…</div>
+  } @else if (tasks().length === 0) {
+    <div hlmEmpty class="min-h-56">
+      <div hlmEmptyHeader>
+        <div
+          hlmEmptyMedia
+          class="bg-muted text-muted-foreground grid size-10 place-items-center rounded-full"
+        >
+          <ng-icon name="lucideListTodo" />
+        </div>
+        <h2 hlmEmptyTitle>
+          {{ search() || filter() !== 'all' ? 'No matching tasks' : 'No tasks yet' }}
+        </h2>
+        <p hlmEmptyDescription>
+          {{
+            search() || filter() !== 'all'
+              ? 'Try changing your search or filter.'
+              : 'Create your first task to get started.'
+          }}
+        </p>
+      </div>
+      <div hlmEmptyContent>
+        <button hlmBtn (click)="openCreateDialog()"><ng-icon name="lucidePlus" /> Add task</button>
+      </div>
+    </div>
+  } @else {
+    <ul class="divide-y rounded-lg border">
+      @for (task of tasks(); track task.id) {
+        <li class="group flex gap-3 px-4 py-3">
+          <hlm-checkbox
+            [checked]="task.isCompleted"
+            [aria-label]="'Mark ' + task.title + ' as ' + (task.isCompleted ? 'open' : 'complete')"
+            (checkedChange)="toggleTask(task, $event)"
+          />
+          <div class="min-w-0 flex-1">
+            <p
+              class="truncate text-sm font-medium"
+              [class.line-through]="task.isCompleted"
+              [class.text-muted-foreground]="task.isCompleted"
+            >
+              {{ task.title }}
+            </p>
+            @if (task.description) {
+              <p class="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
+                {{ task.description }}
+              </p>
+            }
+            @if (categoryName(task); as category) {
+              <span
+                class="bg-secondary text-secondary-foreground mt-2 inline-flex rounded px-1.5 py-0.5 text-[0.6875rem]"
+                >{{ category }}</span
+              >
+            }
+          </div>
+          <button
+            hlmBtn
+            size="icon-sm"
+            variant="ghost"
+            type="button"
+            [hlmDropdownMenuTrigger]="taskActions"
+            aria-label="Task actions"
+          >
+            <ng-icon name="lucideEllipsis" />
+          </button>
+          <ng-template #taskActions>
+            <div hlmDropdownMenu class="w-36">
+              <button hlmDropdownMenuItem type="button" (click)="openEditDialog(task)">
+                <ng-icon name="lucidePencil" /> Edit
+              </button>
+              <button
+                hlmDropdownMenuItem
+                variant="destructive"
+                type="button"
+                (click)="openDeleteDialog(task)"
+              >
+                <ng-icon name="lucideTrash2" /> Delete
+              </button>
+            </div>
+          </ng-template>
+        </li>
+      }
+    </ul>
+
+    @if (totalPages() > 1) {
+      <div class="flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <p class="text-muted-foreground text-xs">
+          {{ totalCount() }} task{{ totalCount() === 1 ? '' : 's' }} · Page {{ page() }} of
+          {{ totalPages() }}
+        </p>
+        <nav hlmPagination aria-label="Task pages">
+          <ul hlmPaginationContent>
+            <li hlmPaginationItem>
+              <a
+                hlmPaginationLink
+                size="default"
+                [class.pointer-events-none]="page() === 1"
+                [class.opacity-50]="page() === 1"
+                aria-label="Go to previous page"
+                (click)="changePage(page() - 1)"
+              >
+                Previous
+              </a>
+            </li>
+            @for (pageNumber of pageNumbers(); track pageNumber) {
+              <li hlmPaginationItem>
+                <a
+                  hlmPaginationLink
+                  [isActive]="pageNumber === page()"
+                  [attr.aria-label]="'Go to page ' + pageNumber"
+                  (click)="changePage(pageNumber)"
+                >
+                  {{ pageNumber }}
+                </a>
+              </li>
+            }
+            <li hlmPaginationItem>
+              <a
+                hlmPaginationLink
+                size="default"
+                [class.pointer-events-none]="page() === totalPages()"
+                [class.opacity-50]="page() === totalPages()"
+                aria-label="Go to next page"
+                (click)="changePage(page() + 1)"
+              >
+                Next
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    }
+  }
+</div>
+
+<hlm-dialog #taskDialog>
+  <hlm-dialog-content *hlmDialogPortal class="w-xl">
+    <form [formRoot]="taskForm" class="grid gap-4">
+      <div hlmDialogHeader>
+        <h2 hlmDialogTitle>{{ editingTask() ? 'Edit task' : 'Create task' }}</h2>
+        <p hlmDialogDescription>
+          {{ editingTask() ? 'Update the task details.' : 'Add a task to your list.' }}
+        </p>
+      </div>
+      <div class="grid gap-2">
+        <label for="task-title" class="text-sm font-medium">Title</label>
+        <input
+          hlmInput
+          id="task-title"
+          [formField]="taskForm.title"
+          placeholder="What needs to be done?"
+        />
+        @for (error of taskForm.title().errors(); track error) {
+          <p class="text-destructive text-xs">{{ error.message }}</p>
+        }
+      </div>
+      <div class="grid gap-2">
+        <label for="task-description" class="text-sm font-medium"
+          >Description <span class="text-muted-foreground font-normal">(optional)</span></label
+        >
+        <textarea
+          id="task-description"
+          class="border-input min-h-20 rounded-md border bg-transparent px-2 py-1.5 text-sm outline-none focus-visible:ring-2"
+          [formField]="taskForm.description"
+        ></textarea>
+        @for (error of taskForm.description().errors(); track error) {
+          <p class="text-destructive text-xs">{{ error.message }}</p>
+        }
+      </div>
+      <div class="grid gap-2">
+        <label class="text-sm font-medium"
+          >Category <span class="text-muted-foreground font-normal">(optional)</span></label
+        >
+        <hlm-native-select [formField]="taskForm.categoryId">
+          <option value="">No category</option>
+          @for (category of categories(); track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+          }
+        </hlm-native-select>
+      </div>
+      <div hlmDialogFooter>
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          hlmDialogClose
+          [disabled]="taskForm().submitting()"
+        >
+          Cancel</button
+        ><button hlmBtn type="submit" [disabled]="taskForm().submitting() || taskForm().invalid()">
+          {{ taskForm().submitting() ? 'Saving…' : editingTask() ? 'Save changes' : 'Create task' }}
+        </button>
+      </div>
+    </form>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<hlm-dialog #deleteDialog>
+  <hlm-dialog-content *hlmDialogPortal>
+    <div class="grid gap-4">
+      <div hlmDialogHeader>
+        <h2 hlmDialogTitle>Delete task?</h2>
+        <p hlmDialogDescription>This will permanently delete {{ deletingTask()?.title }}.</p>
+      </div>
+      <div hlmDialogFooter>
+        <button hlmBtn variant="outline" type="button" hlmDialogClose [disabled]="isDeleting()">
+          Cancel
+        </button>
+        <button
+          hlmBtn
+          variant="destructive"
+          type="button"
+          [disabled]="isDeleting()"
+          (click)="deleteTask()"
+        >
+          {{ isDeleting() ? 'Deleting…' : 'Delete task' }}
+        </button>
+      </div>
+    </div>
+  </hlm-dialog-content>
+</hlm-dialog>

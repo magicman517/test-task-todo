@@ -1,0 +1,8 @@
+<app-home-sidebar
+  [selectedCategoryId]="selectedCategoryId()"
+  (categorySelected)="selectedCategoryId.set($event)"
+>
+  <main hlmSidebarInset class="h-svh min-h-0 overflow-y-auto">
+    <app-tasks [selectedCategoryId]="selectedCategoryId()" />
+  </main>
+</app-home-sidebar>

@@ -1,0 +1,183 @@
+<div hlmSidebarGroup>
+  <div hlmSidebarGroupLabel>Categories</div>
+  <hlm-dialog #createCategoryDialog>
+    <button
+      hlmSidebarGroupAction
+      hlmDialogTrigger
+      [hlmDialogTriggerFor]="createCategoryDialog"
+      type="button"
+      aria-label="Add category"
+      title="Add category"
+    >
+      <ng-icon name="lucidePlus" />
+    </button>
+
+    <hlm-dialog-content *hlmDialogPortal>
+      <form [formRoot]="form" id="create-category-form" class="grid gap-4">
+        <div hlmDialogHeader>
+          <h2 hlmDialogTitle>Create category</h2>
+          <p hlmDialogDescription>Organize your tasks with a new category</p>
+        </div>
+
+        <div class="grid gap-2">
+          <label for="category-name" class="text-sm font-medium">Name</label>
+          <input
+            hlmInput
+            id="category-name"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. Personal"
+            [formField]="form.name"
+          />
+          @for (error of form.name().errors(); track error) {
+            <p class="text-destructive text-xs">{{ error.message }}</p>
+          }
+        </div>
+
+        <div hlmDialogFooter>
+          <button
+            hlmBtn
+            variant="outline"
+            type="button"
+            hlmDialogClose
+            [disabled]="form().submitting()"
+          >
+            Cancel
+          </button>
+          <button hlmBtn type="submit" [disabled]="form().submitting() || form().invalid()">
+            {{ form().submitting() ? 'Creating…' : 'Create category' }}
+          </button>
+        </div>
+      </form>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog #renameCategoryDialog>
+    <hlm-dialog-content *hlmDialogPortal>
+      <form [formRoot]="renameForm" class="grid gap-4">
+        <div hlmDialogHeader>
+          <h2 hlmDialogTitle>Rename category</h2>
+          <p hlmDialogDescription>Choose a new name for {{ selectedCategory()?.name }}.</p>
+        </div>
+
+        <div class="grid gap-2">
+          <label for="rename-category-name" class="text-sm font-medium">Name</label>
+          <input
+            hlmInput
+            id="rename-category-name"
+            type="text"
+            autocomplete="off"
+            [formField]="renameForm.name"
+          />
+          @for (error of renameForm.name().errors(); track error) {
+            <p class="text-destructive text-xs">{{ error.message }}</p>
+          }
+        </div>
+
+        <div hlmDialogFooter>
+          <button
+            hlmBtn
+            variant="outline"
+            type="button"
+            hlmDialogClose
+            [disabled]="renameForm().submitting()"
+          >
+            Cancel
+          </button>
+          <button
+            hlmBtn
+            type="submit"
+            [disabled]="renameForm().submitting() || renameForm().invalid()"
+          >
+            {{ renameForm().submitting() ? 'Saving…' : 'Save changes' }}
+          </button>
+        </div>
+      </form>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog #deleteCategoryDialog>
+    <hlm-dialog-content *hlmDialogPortal>
+      <div class="grid gap-4">
+        <div hlmDialogHeader>
+          <h2 hlmDialogTitle>Delete category?</h2>
+          <p hlmDialogDescription>
+            This will permanently delete {{ selectedCategory()?.name }}. Tasks in this category will
+            not be deleted
+          </p>
+        </div>
+
+        <div hlmDialogFooter>
+          <button
+            hlmBtn
+            variant="outline"
+            type="button"
+            hlmDialogClose
+            [disabled]="isDeletingCategory()"
+          >
+            Cancel
+          </button>
+          <button
+            hlmBtn
+            variant="destructive"
+            type="button"
+            [disabled]="isDeletingCategory()"
+            (click)="deleteCategory()"
+          >
+            {{ isDeletingCategory() ? 'Deleting…' : 'Delete category' }}
+          </button>
+        </div>
+      </div>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <div hlmSidebarGroupContent>
+    <ul hlmSidebarMenu>
+      @for (category of categories(); track category.id) {
+        <li hlmSidebarMenuItem>
+          <button
+            hlmSidebarMenuButton
+            type="button"
+            [isActive]="selectedCategoryId() === category.id"
+            (click)="selectCategory(category.id)"
+          >
+            <ng-icon name="lucideFolder" />
+            <span>{{ category.name }}</span>
+            <span
+              hlmSidebarMenuBadge
+              class="text-sidebar-foreground/70 group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0"
+            >
+              {{ category.pendingTasksCount }}
+            </span>
+          </button>
+          <button
+            hlmSidebarMenuAction
+            showOnHover
+            type="button"
+            [hlmDropdownMenuTrigger]="categoryActions"
+            aria-label="Category actions"
+          >
+            <ng-icon name="lucideEllipsis" />
+          </button>
+          <ng-template #categoryActions>
+            <div hlmDropdownMenu class="w-36">
+              <button hlmDropdownMenuItem type="button" (click)="openRenameDialog(category)">
+                <ng-icon name="lucidePencil" />
+                Rename
+              </button>
+              <button
+                hlmDropdownMenuItem
+                variant="destructive"
+                type="button"
+                (click)="openDeleteDialog(category)"
+              >
+                <ng-icon name="lucideTrash2" />
+                Delete
+              </button>
+            </div>
+          </ng-template>
+        </li>
+      }
+    </ul>
+  </div>
+</div>

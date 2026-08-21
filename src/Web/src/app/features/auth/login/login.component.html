@@ -1,0 +1,80 @@
+<div class="w-full h-screen overflow-auto flex items-center justify-center">
+  <hlm-card class="w-full max-w-120">
+    <hlm-card-header>
+      <h3 hlmCardTitle>Welcome!</h3>
+      <p hlmCardDescription>Enter your credentials to login</p>
+      <div hlmCardAction>
+        <a hlmBtn variant="link" [routerLink]="['/auth/register']">Register</a>
+      </div>
+    </hlm-card-header>
+
+    <!-- Form  -->
+    <div hlmCardContent>
+      <form [formRoot]="form" id="form-login">
+        <hlm-field-group>
+          <!-- Email -->
+          <hlm-field>
+            <label hlmFieldLabel for="email">Email</label>
+            <input
+              id="email"
+              hlmInput
+              placeholder="mail@example.com"
+              type="email"
+              autocomplete="email"
+              [formField]="form.email"
+            />
+            @for (error of form.email().errors(); track error) {
+              <hlm-field-error [validator]="error.kind">
+                {{ error.message }}
+              </hlm-field-error>
+            }
+          </hlm-field>
+
+          <!-- Password  -->
+          <hlm-field>
+            <label hlmFieldLabel for="password">Password</label>
+            <hlm-input-group>
+              <input
+                id="password"
+                hlmInputGroupInput
+                placeholder="********"
+                autocomplete="password"
+                [formField]="form.password"
+                [type]="_isPasswordVisible() ? 'text' : 'password'"
+              />
+              <hlm-input-group-addon align="inline-end">
+                <button
+                  hlmInputGroupButton
+                  aria-label="Toggle password visibility"
+                  title="Toggle password visibility"
+                  size="icon-xs"
+                  (click)="_togglePasswordVisibility()"
+                >
+                  <ng-icon [name]="_isPasswordVisible() ? 'lucideEye' : 'lucideEyeOff'" />
+                </button>
+              </hlm-input-group-addon>
+            </hlm-input-group>
+            @for (error of form.password().errors(); track error) {
+              <hlm-field-error [validator]="error.kind">
+                {{ error.message }}
+              </hlm-field-error>
+            }
+          </hlm-field>
+        </hlm-field-group>
+      </form>
+    </div>
+
+    <!-- Login button -->
+    <hlm-card-footer>
+      <button
+        hlmBtn
+        type="submit"
+        form="form-login"
+        class="w-full"
+        [disabled]="form().submitting() || form().invalid()"
+      >
+        Login
+      </button>
+    </hlm-card-footer>
+  </hlm-card>
+</div>

@@ -1,0 +1,38 @@
+<div hlmSidebarFooter>
+  <ul hlmSidebarMenu>
+    <li hlmSidebarMenuItem>
+      <button
+        hlmSidebarMenuButton
+        size="lg"
+        type="button"
+        [hlmDropdownMenuTrigger]="accountMenu"
+        side="top"
+        align="start"
+      >
+        <hlm-avatar size="sm">
+          <span hlmAvatarFallback>{{ userInitial() }}</span>
+        </hlm-avatar>
+        <span class="grid flex-1 text-start text-xs leading-tight">
+          <span class="truncate font-medium">{{ currentUser()?.email ?? 'Account' }}</span>
+        </span>
+        <ng-icon name="lucideChevronUp" class="ms-auto" />
+      </button>
+
+      <ng-template #accountMenu>
+        <div hlmDropdownMenu class="w-56">
+          <div class="px-2 py-1.5 text-xs font-medium">{{ currentUser()?.email ?? 'Account' }}</div>
+          <button
+            hlmDropdownMenuItem
+            variant="destructive"
+            type="button"
+            [disabled]="isLoggingOut()"
+            (click)="logout()"
+          >
+            <ng-icon name="lucideLogOut" />
+            {{ isLoggingOut() ? 'Logging out…' : 'Log out' }}
+          </button>
+        </div>
+      </ng-template>
+    </li>
+  </ul>
+</div>

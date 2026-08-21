@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/aspire/">
+    <Project Path="aspire/AppHost/AppHost.csproj" />
+    <Project Path="aspire/ServiceDefaults/ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/API/API.csproj" />
+  </Folder>
+</Solution>

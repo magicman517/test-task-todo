@@ -1,0 +1,47 @@
+<div hlmSidebarWrapper class="h-svh overflow-hidden">
+  <hlm-sidebar collapsible="none" class="border-sidebar-border border-r">
+    <div hlmSidebarHeader>
+      <a
+        routerLink="/"
+        class="flex items-center gap-2 rounded-md px-2 py-1 text-lg font-semibold tracking-tight"
+      >
+        <span class="bg-primary text-primary-foreground grid size-6 place-items-center rounded-md">
+          <ng-icon name="lucideListTodo" class="text-[0.75rem]" />
+        </span>
+        Todo
+      </a>
+    </div>
+
+    <div hlmSidebarContent>
+      <div hlmSidebarGroup>
+        <div hlmSidebarGroupContent>
+          <ul hlmSidebarMenu>
+            <li hlmSidebarMenuItem>
+              <a
+                hlmSidebarMenuButton
+                routerLink="/"
+                routerLinkActive
+                #tasksLink="routerLinkActive"
+                [isActive]="tasksLink.isActive && !selectedCategoryId()"
+                [routerLinkActiveOptions]="{ exact: true }"
+                (click)="clearCategoryFilter()"
+              >
+                <ng-icon name="lucideHome" />
+                <span>Tasks</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <app-category-sidebar
+        [selectedCategoryId]="selectedCategoryId()"
+        (categorySelected)="categorySelected.emit($event)"
+      />
+    </div>
+
+    <app-user-sidebar-menu />
+  </hlm-sidebar>
+
+  <ng-content />
+</div>
