@@ -1,13 +1,26 @@
 <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-5 sm:p-8">
   <header class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight">Tasks</h1>
-      <p class="text-muted-foreground mt-1 text-sm">Keep track of what needs to get done</p>
+    <div class="flex items-center gap-2">
+      <button
+        hlmSidebarTrigger
+        class="md:hidden size-10 [&_ng-icon:not([class*='text-'])]:text-[length:--spacing(5)]"
+        aria-label="Toggle sidebar"
+      ></button>
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight">Tasks</h1>
+        <p class="text-muted-foreground mt-1 text-sm">Keep track of what needs to get done</p>
+      </div>
     </div>
-    <button hlmBtn (click)="openCreateDialog()">
-      <ng-icon name="lucidePlus" />
-      Add task
-    </button>
+    <div class="flex items-center gap-2">
+      <button hlmBtn variant="outline" (click)="seedDemoData()" [disabled]="isSeeding()">
+        <ng-icon name="lucideSprout" />
+        {{ isSeeding() ? 'Seeding…' : 'Seed demo data' }}
+      </button>
+      <button hlmBtn (click)="openCreateDialog()">
+        <ng-icon name="lucidePlus" />
+        Add task
+      </button>
+    </div>
   </header>
 
   <div class="flex flex-col gap-3 sm:flex-row">
@@ -62,7 +75,14 @@
         </p>
       </div>
       <div hlmEmptyContent>
-        <button hlmBtn (click)="openCreateDialog()"><ng-icon name="lucidePlus" /> Add task</button>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button hlmBtn (click)="openCreateDialog()">
+            <ng-icon name="lucidePlus" /> Add task
+          </button>
+          <button hlmBtn variant="outline" (click)="seedDemoData()" [disabled]="isSeeding()">
+            <ng-icon name="lucideSprout" /> {{ isSeeding() ? 'Seeding…' : 'Seed demo data' }}
+          </button>
+        </div>
       </div>
     </div>
   } @else {

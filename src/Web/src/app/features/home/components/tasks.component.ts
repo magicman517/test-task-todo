@@ -21,6 +21,7 @@ import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmNativeSelectImports } from '@spartan-ng/helm/native-select';
 import { HlmPaginationImports } from '@spartan-ng/helm/pagination';
+import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideCheck,
@@ -29,9 +30,11 @@ import {
   lucidePencil,
   lucidePlus,
   lucideSearch,
+  lucideSprout,
   lucideTrash2,
 } from '@ng-icons/lucide';
 import { getApiErrorMessage } from '../../../core/http/problem-details';
+import { CategoriesService } from '../../../core/services/categories.service';
 import { CategoryStateService } from '../../../core/services/category-state.service';
 import { TodosService, type Todo } from '../../../core/services/todos.service';
 
@@ -51,6 +54,7 @@ type TaskFilter = 'all' | 'open' | 'completed';
     HlmInputImports,
     HlmNativeSelectImports,
     HlmPaginationImports,
+    HlmSidebarImports,
     NgIcon,
   ],
   providers: [
@@ -61,6 +65,7 @@ type TaskFilter = 'all' | 'open' | 'completed';
       lucidePencil,
       lucidePlus,
       lucideSearch,
+      lucideSprout,
       lucideTrash2,
     }),
   ],
@@ -70,6 +75,7 @@ type TaskFilter = 'all' | 'open' | 'completed';
 })
 export class TasksComponent {
   private readonly todosService = inject(TodosService);
+  private readonly categoriesService = inject(CategoriesService);
   private readonly categoryState = inject(CategoryStateService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchTerms = new Subject<string>();
@@ -90,6 +96,7 @@ export class TasksComponent {
   protected readonly editingTask = signal<Todo | null>(null);
   protected readonly deletingTask = signal<Todo | null>(null);
   protected readonly isDeleting = signal(false);
+  protected readonly isSeeding = signal(false);
   protected readonly taskModel = signal({ title: '', description: '', categoryId: '' });
 
   public readonly taskForm = form(
@@ -182,6 +189,25 @@ export class TasksComponent {
 
   protected searchTasks(event: Event): void {
     this.searchTerms.next((event.target as HTMLInputElement).value);
+  }
+
+  protected async seedDemoData(): Promise<void> {
+    if (this.isSeeding()) return;
+
+    this.isSeeding.set(true);
+    try {
+      await firstValueFrom(this.categoriesService.seed());
+      await firstValueFrom(this.todosService.seed(10));
+      this.categoryState.refresh().subscribe({ error: () => undefined });
+      this.filter.set('all');
+      this.page.set(1);
+      this.loadTasks();
+      toast.success('Demo data has been seeded');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+    } finally {
+      this.isSeeding.set(false);
+    }
   }
 
   protected openCreateDialog(): void {

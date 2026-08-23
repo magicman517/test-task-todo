@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Services;
 
-public sealed class TodoService(AppDbContext dbContext) : ITodoService
+public sealed class TodoService(
+    AppDbContext dbContext,
+    ILogger<TodoService> logger) : ITodoService
 {
     public async Task<PaginatedResult<TodoDto>> GetListAsync(
         Guid userId,
@@ -69,9 +71,13 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
             .Include(t => t.Category)
             .FirstOrDefaultAsync(x => x.Id == todoId && x.UserId == userId, ct);
 
-        return todo is null
-            ? Error.NotFound("Todo.NotFound", "Task not found")
-            : TodoDto.FromEntity(todo);
+        if (todo is null)
+        {
+            logger.LogWarning("Todo {TodoId} not found for user {UserId}", todoId, userId);
+            return Error.NotFound("Todo.NotFound", "Task not found");
+        }
+
+        return TodoDto.FromEntity(todo);
     }
 
     public async Task<ErrorOr<TodoDto>> CreateAsync(
@@ -86,6 +92,10 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
 
             if (!categoryExist)
             {
+                logger.LogWarning(
+                    "Failed to create todo for user {UserId}: category {CategoryId} does not exist",
+                    userId, request.CategoryId.Value);
+
                 return Error.NotFound("Category.NotFound", "Category does not exist");
             }
         }
@@ -101,6 +111,8 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
         dbContext.TodoItems.Add(todo);
         await dbContext.SaveChangesAsync(ct);
 
+        logger.LogInformation("Created todo {TodoId} for user {UserId}", todo.Id, userId);
+
         return TodoDto.FromEntity(todo);
     }
 
@@ -113,6 +125,7 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
         var todo = await dbContext.TodoItems.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == todoId, ct);
         if (todo is null)
         {
+            logger.LogWarning("Failed to update todo {TodoId}: not found for user {UserId}", todoId, userId);
             return Error.NotFound("Todo.NotFound", "Task not found");
         }
 
@@ -121,6 +134,10 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
             var categoryExists = await dbContext.Categories.AnyAsync(x => x.Id == request.CategoryId.Value && x.UserId == userId, ct);
             if (!categoryExists)
             {
+                logger.LogWarning(
+                    "Failed to update todo {TodoId} for user {UserId}: category {CategoryId} does not exist",
+                    todoId, userId, request.CategoryId.Value);
+
                 return Error.NotFound("Category.NotFound", "Category does not exits");
             }
         }
@@ -131,6 +148,8 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
         todo.CategoryId = request.CategoryId;
 
         await dbContext.SaveChangesAsync(ct);
+
+        logger.LogInformation("Updated todo {TodoId} for user {UserId}", todoId, userId);
 
         return TodoDto.FromEntity(todo);
     }
@@ -143,11 +162,14 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
         var todo = await dbContext.TodoItems.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == todoId, ct);
         if (todo is null)
         {
+            logger.LogWarning("Failed to delete todo {TodoId}: not found for user {UserId}", todoId, userId);
             return Error.NotFound("Todo.NotFound", "Task not found");
         }
 
         dbContext.TodoItems.Remove(todo);
         await dbContext.SaveChangesAsync(ct);
+
+        logger.LogInformation("Deleted todo {TodoId} for user {UserId}", todoId, userId);
 
         return Result.Deleted;
     }
@@ -288,6 +310,8 @@ public sealed class TodoService(AppDbContext dbContext) : ITodoService
 
         dbContext.TodoItems.AddRange(newTodos);
         await dbContext.SaveChangesAsync(ct);
+
+        logger.LogInformation("Seeded {Count} todos for user {UserId}", newTodos.Count, userId);
 
         return newTodos.Select(TodoDto.FromEntity).ToList();
     }

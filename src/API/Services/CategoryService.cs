@@ -8,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Services;
 
-public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
+public sealed class CategoryService(
+    AppDbContext dbContext,
+    ILogger<CategoryService> logger) : ICategoryService
 {
     public async Task<IReadOnlyList<CategoryDto>> GetAllAsync(
         Guid userId,
@@ -33,9 +35,13 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
             .Select(CategoryDto.Projection)
             .FirstOrDefaultAsync(ct);
 
-        return category is null
-            ? Error.NotFound("Category.NotFound", "Category not found")
-            : category;
+        if (category is null)
+        {
+            logger.LogWarning("Category {CategoryId} not found for user {UserId}", id, userId);
+            return Error.NotFound("Category.NotFound", "Category not found");
+        }
+
+        return category;
     }
 
     public async Task<ErrorOr<CategoryDto>> CreateAsync(
@@ -50,6 +56,10 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
 
         if (exists)
         {
+            logger.LogWarning(
+                "Failed to create category for user {UserId}: name {Name} already exists",
+                userId, normalizedName);
+
             return Error.Conflict("Category.Duplicate", "Category with this name already exists");
         }
 
@@ -61,6 +71,9 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
 
         dbContext.Categories.Add(category);
         await dbContext.SaveChangesAsync(ct);
+
+        logger.LogInformation("Created category {CategoryId} ({Name}) for user {UserId}",
+            category.Id, category.Name, userId);
 
         return CategoryDto.FromEntity(category);
     }
@@ -76,6 +89,7 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
 
         if (category is null)
         {
+            logger.LogWarning("Failed to update category {CategoryId}: not found for user {UserId}", id, userId);
             return Error.NotFound("Category.NotFound", "Category not found");
         }
 
@@ -84,11 +98,18 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
             .AnyAsync(x => x.UserId == userId && x.Id != id && x.Name.ToLower() == normalizedName.ToLower(), ct);
         if (nameExists)
         {
+            logger.LogWarning(
+                "Failed to update category {CategoryId} for user {UserId}: name {Name} already exists",
+                id, userId, normalizedName);
+
             return Error.Conflict("Category.Duplicate", "Category with this name already exists");
         }
 
         category.Name = normalizedName;
         await dbContext.SaveChangesAsync(ct);
+
+        logger.LogInformation("Updated category {CategoryId} ({Name}) for user {UserId}",
+            category.Id, category.Name, userId);
 
         return CategoryDto.FromEntity(category);
     }
@@ -103,11 +124,15 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
 
         if (category is null)
         {
+            logger.LogWarning("Failed to delete category {CategoryId}: not found for user {UserId}", id, userId);
             return Error.NotFound("Category.NotFound", "Category not found");
         }
 
         dbContext.Categories.Remove(category);
         await dbContext.SaveChangesAsync(ct);
+
+        logger.LogInformation("Deleted category {CategoryId} ({Name}) for user {UserId}",
+            category.Id, category.Name, userId);
 
         return Result.Deleted;
     }
@@ -165,6 +190,8 @@ public sealed class CategoryService(AppDbContext dbContext) : ICategoryService
         {
             dbContext.Categories.AddRange(newCategories);
             await dbContext.SaveChangesAsync(ct);
+
+            logger.LogInformation("Seeded {Count} categories for user {UserId}", newCategories.Count, userId);
         }
 
         var allCategories = await dbContext.Categories
